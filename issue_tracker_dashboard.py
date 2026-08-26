@@ -93,10 +93,10 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
         border: 1px solid #4a4a8a !important;
         border-radius: 12px !important;
-        padding: 10px !important;
+        padding: 20px !important;
         color: white !important;
         transition: all 0.3s !important;
-        min-height: 80px !important;
+        min-height: 140px !important;
     }
     .stButton > button:hover {
         border-color: #00d4ff !important;
@@ -106,17 +106,6 @@ st.markdown("""
     .stButton > button:active, .stButton > button:focus {
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
-    }
-    /* Reduce block gaps */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-    [data-testid="stVerticalBlock"] > div {
-        gap: 0.5rem !important;
-    }
-    [data-testid="stHorizontalBlock"] {
-        gap: 0.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
