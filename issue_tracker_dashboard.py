@@ -222,15 +222,54 @@ st.markdown(f"""
 total_issues = sum(len(df) for df in sheets.values())
 non_empty_sheets = {k: v for k, v in sheets.items() if len(v) > 0}
 top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A", pd.DataFrame())
+
+# OPCO normalization mappings
+OPCO_ALIASES = {
+    "Africa": "South Africa",
+}
+# OPCOs to expand to all individual OPCOs
+OPCO_EXPAND_ALL = {"ALL MTN"}
+
+
+def get_all_individual_opcos(sheets_data):
+    """Get all individual OPCOs (excluding ALL MTN and Africa alias)."""
+    opcos = set()
+    for df in sheets_data.values():
+        opco_col = [c for c in df.columns if "opco" in c.lower()]
+        if opco_col:
+            for val in df[opco_col[0]].dropna().str.strip().unique():
+                for o in str(val).split(","):
+                    o = o.strip()
+                    if o and o not in OPCO_EXPAND_ALL:
+                        o = OPCO_ALIASES.get(o, o)
+                        opcos.add(o)
+    return opcos
+
+
+def normalize_opcos(raw_value, all_individual_opcos):
+    """Split and normalize a raw OPCO value into individual OPCOs."""
+    result = []
+    for o in str(raw_value).split(","):
+        o = o.strip()
+        if not o or o == "nan":
+            continue
+        if o in OPCO_EXPAND_ALL:
+            result.extend(all_individual_opcos)
+        else:
+            o = OPCO_ALIASES.get(o, o)
+            result.append(o)
+    return result
+
+
+# Get all individual OPCOs for expansion
+all_individual_opcos = get_all_individual_opcos(sheets)
+
 all_opcos = set()
 for name, df in sheets.items():
     opco_col = [c for c in df.columns if "opco" in c.lower()]
     if opco_col:
         for val in df[opco_col[0]].dropna().str.strip().unique():
-            for opco in str(val).split(","):
-                opco = opco.strip()
-                if opco:
-                    all_opcos.add(opco)
+            all_opcos.update(normalize_opcos(val, all_individual_opcos))
 
 # Sidebar
 with st.sidebar:
@@ -468,10 +507,7 @@ elif st.session_state.active_view == "top_category":
         st.markdown('<div class="section-header">🌍 By OPCO</div>', unsafe_allow_html=True)
         opco_list = []
         for val in df[opco_col[0]].dropna():
-            for o in str(val).split(","):
-                o = o.strip()
-                if o:
-                    opco_list.append(o)
+            opco_list.extend(normalize_opcos(str(val), all_individual_opcos))
         opco_data = pd.Series(opco_list).value_counts().reset_index()
         opco_data.columns = ["OPCO", "Count"]
         fig = px.pie(opco_data, values="Count", names="OPCO",
@@ -510,10 +546,8 @@ elif st.session_state.active_view == "opcos":
             for _, row in df.iterrows():
                 raw_opco = str(row[opco_col[0]]).strip()
                 if raw_opco and raw_opco != "nan":
-                    for opco in raw_opco.split(","):
-                        opco = opco.strip()
-                        if opco:
-                            opco_issue_counts[opco] = opco_issue_counts.get(opco, 0) + 1
+                    for opco in normalize_opcos(raw_opco, all_individual_opcos):
+                        opco_issue_counts[opco] = opco_issue_counts.get(opco, 0) + 1
     
     if opco_issue_counts:
         opco_df = pd.DataFrame(list(opco_issue_counts.items()), columns=["OPCO", "Issues"])
@@ -542,7 +576,7 @@ elif st.session_state.active_view == "opcos":
                 opco_col = [c for c in df.columns if "opco" in c.lower()]
                 if opco_col:
                     opco_filtered = df[df[opco_col[0]].astype(str).apply(
-                        lambda x: selected_opco in [o.strip() for o in x.split(",")]
+                        lambda x: selected_opco in normalize_opcos(x, all_individual_opcos)
                     )]
                     if not opco_filtered.empty:
                         icon = CATEGORY_ICONS.get(name, "📄")
@@ -625,10 +659,7 @@ elif st.session_state.active_view.startswith("sheet_"):
                     # Split combined OPCOs and count individually
                     opco_list = []
                     for val in filtered_df[opco_col[0]].dropna():
-                        for o in str(val).split(","):
-                            o = o.strip()
-                            if o:
-                                opco_list.append(o)
+                        opco_list.extend(normalize_opcos(str(val), all_individual_opcos))
                     opco_data = pd.Series(opco_list).value_counts().reset_index()
                     opco_data.columns = ["OPCO", "Count"]
                     fig2 = px.bar(opco_data, x="OPCO", y="Count", color="Count",
