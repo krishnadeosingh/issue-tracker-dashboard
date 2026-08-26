@@ -175,21 +175,21 @@ if "selected_customer" not in st.session_state:
     st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
 
 # ===== HEADER WITH CUSTOMER BUTTONS =====
-header_col1, header_col2, header_col3, header_col4 = st.columns([2, 2, 1, 1])
-with header_col1:
-    st.markdown("""
-    <div style="text-align: left; padding-top: 5px;">
-        <h1 style="color: #00d4ff; margin-bottom: 0; font-size: 1.8rem;">🛡️ GNOC Issue Tracker</h1>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style="text-align: center; padding-top: 10px;">
+    <h1 style="color: #00d4ff; margin-bottom: 0; font-size: 2.5rem;">🛡️ GNOC Issue Tracker</h1>
+</div>
+""", unsafe_allow_html=True)
 
-with header_col3:
+# Customer buttons centered below header
+btn_col1, btn_col2, btn_col3, btn_col4, btn_col5 = st.columns([2, 1.5, 0.2, 1.5, 2])
+with btn_col2:
     if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
         st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
         st.session_state.active_view = "home"
         st.rerun()
 
-with header_col4:
+with btn_col4:
     if st.button("🟡 MTN", key="btn_mtn", use_container_width=True):
         st.session_state.selected_customer = "🟡 MTN"
         st.session_state.active_view = "home"
