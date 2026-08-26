@@ -93,15 +93,15 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
         border: 1px solid #4a4a8a !important;
         border-radius: 8px !important;
-        padding: 8px 30px !important;
+        padding: 15px 25px !important;
         color: white !important;
         transition: all 0.3s !important;
         min-height: auto !important;
-        height: 45px !important;
-        font-size: 0.85rem !important;
+        height: 70px !important;
+        font-size: 0.9rem !important;
         white-space: nowrap !important;
         overflow: hidden !important;
-        line-height: 1.2 !important;
+        line-height: 1.4 !important;
     }
     .stButton > button:hover {
         border-color: #00d4ff !important;
@@ -308,22 +308,22 @@ if st.session_state.active_view == "home":
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button(f"📊\n\n**{total_issues}**\n\nTOTAL ISSUES", key="kpi_total"):
+        if st.button(f"📊 Total Issues: {total_issues}", key="kpi_total"):
             st.session_state.active_view = "total_issues"
             st.rerun()
     
     with col2:
-        if st.button(f"📂\n\n**{len(non_empty_sheets)}**\n\nACTIVE CATEGORIES", key="kpi_cat"):
+        if st.button(f"📂 Active Categories: {len(non_empty_sheets)}", key="kpi_cat"):
             st.session_state.active_view = "categories"
             st.rerun()
     
     with col3:
-        if st.button(f"🔥\n\n**{len(top_category[1])}**\n\nTOP CATEGORY", key="kpi_top"):
+        if st.button(f"🔥 Top Category: {len(top_category[1])}", key="kpi_top"):
             st.session_state.active_view = "top_category"
             st.rerun()
     
     with col4:
-        if st.button(f"🌍\n\n**{len(all_opcos)}**\n\nOPCOs AFFECTED", key="kpi_opco"):
+        if st.button(f"🌍 OPCOs Affected: {len(all_opcos)}", key="kpi_opco"):
             st.session_state.active_view = "opcos"
             st.rerun()
     
