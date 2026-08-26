@@ -112,11 +112,15 @@ st.markdown("""
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
     }
-    /* Small toggle buttons override */
-    .toggle-btn button {
-        height: 35px !important;
-        min-height: 35px !important;
-        padding: 5px 15px !important;
+    /* Toggle radio styling */
+    .toggle-btn .stRadio > div {
+        gap: 0.5rem !important;
+    }
+    .toggle-btn .stRadio > div label {
+        background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
+        border: 1px solid #4a4a8a !important;
+        border-radius: 8px !important;
+        padding: 5px 12px !important;
         font-size: 0.8rem !important;
     }
 </style>
@@ -187,12 +191,16 @@ with header_col2:
 
 with header_col3:
     st.markdown('<div class="toggle-btn">', unsafe_allow_html=True)
-    if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
-        st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
-        st.session_state.active_view = "home"
-        st.rerun()
-    if st.button("🟡 MTN", key="btn_mtn", use_container_width=True):
-        st.session_state.selected_customer = "🟡 MTN"
+    selected = st.radio(
+        "Customer",
+        list(CUSTOMERS.keys()),
+        index=list(CUSTOMERS.keys()).index(st.session_state.selected_customer),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="customer_radio"
+    )
+    if selected != st.session_state.selected_customer:
+        st.session_state.selected_customer = selected
         st.session_state.active_view = "home"
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
