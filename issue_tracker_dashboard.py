@@ -119,6 +119,13 @@ st.markdown("""
         padding: 8px 10px !important;
         font-size: 0.75rem !important;
     }
+    /* Reduce top space */
+    .block-container {
+        padding-top: 1rem !important;
+    }
+    [data-testid="stHeader"] {
+        height: 2rem !important;
+    }
 
 </style>
 """, unsafe_allow_html=True)
