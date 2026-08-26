@@ -92,11 +92,12 @@ st.markdown("""
         width: 100%;
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
         border: 1px solid #4a4a8a !important;
-        border-radius: 12px !important;
-        padding: 12px !important;
+        border-radius: 8px !important;
+        padding: 5px 10px !important;
         color: white !important;
         transition: all 0.3s !important;
-        min-height: 100px !important;
+        min-height: 35px !important;
+        font-size: 0.8rem !important;
     }
     .stButton > button:hover {
         border-color: #00d4ff !important;
@@ -174,16 +175,6 @@ with header_col2:
     """, unsafe_allow_html=True)
 
 with header_col3:
-    st.markdown("""
-    <style>
-        div[data-testid="stColumn"]:last-child .stButton > button {
-            min-height: 35px !important;
-            padding: 5px 10px !important;
-            font-size: 0.8rem !important;
-            border-radius: 8px !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
     if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
         st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
         st.session_state.active_view = "home"
