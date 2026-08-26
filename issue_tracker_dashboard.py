@@ -112,6 +112,13 @@ st.markdown("""
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
     }
+    /* Override for toggle buttons in header - nested columns make them identifiable */
+    [data-testid="stColumn"] [data-testid="stColumn"] .stButton > button {
+        height: auto !important;
+        min-height: auto !important;
+        padding: 8px 10px !important;
+        font-size: 0.75rem !important;
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -180,17 +187,18 @@ with header_col2:
     """, unsafe_allow_html=True)
 
 with header_col3:
-    selected = st.selectbox(
-        "Customer",
-        list(CUSTOMERS.keys()),
-        index=list(CUSTOMERS.keys()).index(st.session_state.selected_customer),
-        label_visibility="collapsed",
-        key="customer_select"
-    )
-    if selected != st.session_state.selected_customer:
-        st.session_state.selected_customer = selected
-        st.session_state.active_view = "home"
-        st.rerun()
+    st.markdown("<p style='font-size:0.7rem; color:#a0a0c0; margin:0; padding-top:15px; text-align:center;'>Switch Customer</p>", unsafe_allow_html=True)
+    tcol1, tcol2 = st.columns(2)
+    with tcol1:
+        if st.button("🔵 AA/OBF", key="btn_aa", use_container_width=True):
+            st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
+            st.session_state.active_view = "home"
+            st.rerun()
+    with tcol2:
+        if st.button("🟡 MTN", key="btn_mtn", use_container_width=True):
+            st.session_state.selected_customer = "🟡 MTN"
+            st.session_state.active_view = "home"
+            st.rerun()
 
 selected_customer = st.session_state.selected_customer
 
