@@ -112,7 +112,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load data
-EXCEL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Issue Tracker M.xlsx")
+EXCEL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Issue Tracker AA_OBF.xlsx")
 
 
 @st.cache_data(ttl=300)
