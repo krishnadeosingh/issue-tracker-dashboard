@@ -93,13 +93,15 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
         border: 1px solid #4a4a8a !important;
         border-radius: 8px !important;
-        padding: 8px 20px !important;
+        padding: 10px 20px !important;
         color: white !important;
         transition: all 0.3s !important;
-        min-height: 0px !important;
-        max-height: 40px !important;
-        font-size: 0.8rem !important;
+        min-height: auto !important;
+        height: auto !important;
+        font-size: 0.85rem !important;
         white-space: nowrap !important;
+        overflow: hidden !important;
+        line-height: 1.2 !important;
     }
     .stButton > button:hover {
         border-color: #00d4ff !important;
