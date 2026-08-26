@@ -5,3 +5,5 @@ Critical CLA*
 auto_push.sh
 auto_push.log
 *.Identifier
+TT_Dashboard*
+~$*
