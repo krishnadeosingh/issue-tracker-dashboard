@@ -17,108 +17,151 @@ st.set_page_config(
 st.markdown("""
 <style>
     .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #1a1a3e 50%, #24243e 100%);
+        background: #080c14;
     }
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e1e3f 0%, #2d2d5e 100%);
-        border-right: 1px solid #4a4a8a;
+        background: linear-gradient(180deg, #0f1923 0%, #080c14 100%);
+        border-right: 1px solid rgba(59, 130, 246, 0.2);
     }
+    
+    /* Glassmorphism KPI Cards */
     .kpi-card {
-        background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%);
-        border: 1px solid #4a4a8a;
-        border-radius: 12px;
-        padding: 20px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 16px;
+        padding: 24px 20px;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transition: transform 0.2s;
+        backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #60a5fa, #a78bfa);
+        opacity: 0;
+        transition: opacity 0.3s;
     }
     .kpi-card:hover {
-        transform: translateY(-2px);
-        border-color: #00d4ff;
+        transform: translateY(-4px);
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     }
+    .kpi-card:hover::before { opacity: 1; }
     .kpi-value {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: 700;
-        color: #00d4ff;
-        margin: 5px 0;
+        margin: 8px 0;
+        background: linear-gradient(90deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     .kpi-label {
-        font-size: 0.9rem;
-        color: #a0a0c0;
+        font-size: 0.8rem;
+        color: #94a3b8;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
     }
     .kpi-icon {
         font-size: 1.5rem;
         margin-bottom: 5px;
+        opacity: 0.8;
     }
+    
+    /* Gradient Header */
     .main-header {
         text-align: center;
         padding: 20px 0;
         margin-bottom: 20px;
     }
     .main-header h1 {
-        color: #00d4ff;
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: 700;
+        background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin: 0;
     }
     .main-header p {
-        color: #a0a0c0;
-        font-size: 1.1rem;
+        color: #94a3b8;
+        font-size: 1rem;
         margin-top: 5px;
     }
+    
+    /* Section headers with gradient underline */
     .section-header {
-        color: #ffffff;
-        border-bottom: 2px solid #00d4ff;
+        color: #e2e8f0;
+        border-bottom: 2px solid transparent;
+        border-image: linear-gradient(90deg, #60a5fa, #a78bfa) 1;
         padding-bottom: 8px;
         margin: 30px 0 15px 0;
-        font-size: 1.3rem;
+        font-size: 1.2rem;
+        font-weight: 600;
     }
+    
+    /* Metric cards */
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%);
-        border: 1px solid #4a4a8a;
-        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 12px;
         padding: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+    }
+    [data-testid="stMetric"]:hover {
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
     }
     [data-testid="stMetricValue"] {
-        color: #00d4ff;
+        background: linear-gradient(90deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
+    
     hr {
-        border-color: #4a4a8a;
+        border-color: rgba(59, 130, 246, 0.15);
     }
+    
+    /* KPI Buttons */
     .stButton > button {
         width: 100%;
-        background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
-        border: 1px solid #4a4a8a !important;
-        border-radius: 8px !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(59, 130, 246, 0.15) !important;
+        border-radius: 12px !important;
         padding: 15px 25px !important;
-        color: white !important;
-        transition: all 0.3s !important;
+        color: #e2e8f0 !important;
+        transition: all 0.3s ease !important;
         min-height: auto !important;
         height: 70px !important;
         font-size: 0.9rem !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         line-height: 1.4 !important;
+        backdrop-filter: blur(20px) !important;
     }
     .stButton > button:hover {
-        border-color: #00d4ff !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(0,212,255,0.3) !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2) !important;
+        color: #60a5fa !important;
     }
     .stButton > button:active, .stButton > button:focus {
-        border-color: #00d4ff !important;
-        box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.3) !important;
     }
-    /* Override for toggle buttons in header - nested columns make them identifiable */
+    
+    /* Override for toggle buttons in header */
     [data-testid="stColumn"] [data-testid="stColumn"] .stButton > button {
         height: auto !important;
         min-height: auto !important;
         padding: 8px 10px !important;
         font-size: 0.75rem !important;
+        border-radius: 8px !important;
     }
+    
     /* Reduce top space */
     .block-container {
         padding-top: 1rem !important;
@@ -126,7 +169,63 @@ st.markdown("""
     [data-testid="stHeader"] {
         height: 2rem !important;
     }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(59, 130, 246, 0.15) !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Dataframe styling */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Category cards */
+    .cat-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .cat-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+    }
+    .cat-card .cat-icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .cat-card .cat-value { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+    .cat-card .cat-name { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Viewing badge */
+    .viewing-badge {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .viewing-badge span {
+        padding: 5px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        backdrop-filter: blur(10px);
+    }
 
+    /* Animated counter keyframes */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in {
+        animation: fadeInUp 0.6s ease forwards;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -159,13 +258,13 @@ def load_all_sheets(file_path):
 
 # Category colors & icons
 CATEGORY_COLORS = {
-    "MSDP Issue": "#ff6b6b",
-    "Autocaller Issue": "#ffa726",
-    "Test Alerts Issue": "#ffee58",
-    "Auto TT Issue": "#66bb6a",
-    "ITSM Issue": "#42a5f5",
-    "OneFM Issue ": "#ab47bc",
-    "EtigerNG Issue ": "#26c6da"
+    "MSDP Issue": "#3b82f6",
+    "Autocaller Issue": "#f59e0b",
+    "Test Alerts Issue": "#ef4444",
+    "Auto TT Issue": "#10b981",
+    "ITSM Issue": "#8b5cf6",
+    "OneFM Issue ": "#06b6d4",
+    "EtigerNG Issue ": "#ec4899"
 }
 CATEGORY_ICONS = {
     "MSDP Issue": "🔴",
@@ -189,7 +288,7 @@ header_col1, header_col2, header_col3 = st.columns([1, 3, 1.5])
 with header_col2:
     st.markdown("""
     <div style="text-align: center; padding-top: 5px;">
-        <h1 style="color: #00d4ff; margin-bottom: 0; font-size: 2.5rem;">🛡️ GNOC Issue Tracker</h1>
+        <h1 style="font-size: 2rem; font-weight: 700; background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🛡️ GNOC Issue Tracker</h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -222,11 +321,9 @@ customer_color = customer_config["color"]
 
 # Show which customer is selected
 st.markdown(f"""
-<div style="text-align: center; margin-bottom: 20px;">
-    <span style="background: {customer_color}22; border: 1px solid {customer_color}; 
-                 padding: 5px 20px; border-radius: 20px; color: {customer_color};
-                 font-weight: 600; font-size: 0.9rem;">
-        Viewing: {selected_customer}
+<div class="viewing-badge">
+    <span style="background: {customer_color}15; border: 1px solid {customer_color}44; color: {customer_color};">
+        ● Viewing: {selected_customer}
     </span>
 </div>
 """, unsafe_allow_html=True)
@@ -319,7 +416,7 @@ with st.sidebar:
 if st.session_state.active_view == "home":
     st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <p style="color: #a0a0c0;">Click any card below to drill down into details</p>
+        <p style="color: #94a3b8;">Click any card below to drill down into details</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -359,14 +456,14 @@ if st.session_state.active_view == "home":
         }).sort_values("Count", ascending=True)
         
         fig = px.bar(chart_data, x="Count", y="Category", orientation="h",
-                     color="Count", color_continuous_scale=["#1e3a5f", customer_color], text="Count")
+                     color="Count", color_continuous_scale=["#1e293b", "#60a5fa"], text="Count")
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+            font=dict(color="#94a3b8"), showlegend=False, coloraxis_showscale=False,
             margin=dict(l=0, r=20, t=10, b=0), height=300,
-            xaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)"), yaxis=dict(showgrid=False)
+            xaxis=dict(showgrid=True, gridcolor="rgba(59,130,246,0.1)"), yaxis=dict(showgrid=False)
         )
-        fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
+        fig.update_traces(textposition="outside", textfont=dict(color="#60a5fa"))
         st.plotly_chart(fig, use_container_width=True)
     
     with col_right:
@@ -380,7 +477,7 @@ if st.session_state.active_view == "home":
                              color_discrete_sequence=list(CATEGORY_COLORS.values()), hole=0.4)
             fig_pie.update_layout(
                 plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0),
+                font=dict(color="#94a3b8"), margin=dict(l=0, r=0, t=10, b=0),
                 height=300, legend=dict(font=dict(size=10))
             )
             fig_pie.update_traces(textinfo="percent+value", textfont=dict(color="white"))
@@ -429,11 +526,11 @@ elif st.session_state.active_view == "total_issues":
                          color="Issues Logged", color_continuous_scale=["#2d2d5e", customer_color], text="Issues Logged")
         fig_rec.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+            font=dict(color="#94a3b8"), showlegend=False, coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=10, b=0), height=300,
-            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
+            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(59,130,246,0.1)")
         )
-        fig_rec.update_traces(textposition="outside", textfont=dict(color=customer_color))
+        fig_rec.update_traces(textposition="outside", textfont=dict(color="#60a5fa"))
         st.plotly_chart(fig_rec, use_container_width=True)
     
     # All data tables
@@ -469,9 +566,9 @@ elif st.session_state.active_view == "categories":
                  color="Count", color_continuous_scale=["#1e3a5f", customer_color], text="Count")
     fig.update_layout(
         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+        font=dict(color="#94a3b8"), showlegend=False, coloraxis_showscale=False,
         margin=dict(l=0, r=0, t=10, b=0), height=350,
-        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
+        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(59,130,246,0.1)")
     )
     fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
     st.plotly_chart(fig, use_container_width=True)
@@ -527,7 +624,7 @@ elif st.session_state.active_view == "top_category":
                      color_discrete_sequence=px.colors.sequential.Tealgrn, hole=0.3)
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0), height=300
+            font=dict(color="#94a3b8"), margin=dict(l=0, r=0, t=10, b=0), height=300
         )
         st.plotly_chart(fig, use_container_width=True)
     
@@ -570,10 +667,10 @@ elif st.session_state.active_view == "opcos":
                      color_continuous_scale=["#1e3a5f", customer_color], text="Issues")
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+            font=dict(color="#94a3b8"), showlegend=False, coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=10, b=0), height=350,
             xaxis=dict(showgrid=False, tickangle=-45),
-            yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
+            yaxis=dict(showgrid=True, gridcolor="rgba(59,130,246,0.1)")
         )
         fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
         st.plotly_chart(fig, use_container_width=True)
@@ -661,7 +758,7 @@ elif st.session_state.active_view.startswith("sheet_"):
                                 color_discrete_sequence=px.colors.sequential.Tealgrn, hole=0.3)
                     fig.update_layout(
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0), height=250
+                        font=dict(color="#94a3b8"), margin=dict(l=0, r=0, t=10, b=0), height=250
                     )
                     st.plotly_chart(fig, use_container_width=True)
             
@@ -679,9 +776,9 @@ elif st.session_state.active_view.startswith("sheet_"):
                                  color_continuous_scale=["#1e3a5f", color], text="Count")
                     fig2.update_layout(
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+                        font=dict(color="#94a3b8"), showlegend=False, coloraxis_showscale=False,
                         margin=dict(l=0, r=0, t=10, b=0), height=250,
-                        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
+                        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(59,130,246,0.1)")
                     )
                     fig2.update_traces(textposition="outside", textfont=dict(color=color))
                     st.plotly_chart(fig2, use_container_width=True)
