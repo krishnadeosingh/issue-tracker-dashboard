@@ -112,6 +112,13 @@ st.markdown("""
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
     }
+    /* Small toggle buttons override */
+    .toggle-btn button {
+        height: 35px !important;
+        min-height: 35px !important;
+        padding: 5px 15px !important;
+        font-size: 0.8rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -179,6 +186,7 @@ with header_col2:
     """, unsafe_allow_html=True)
 
 with header_col3:
+    st.markdown('<div class="toggle-btn">', unsafe_allow_html=True)
     if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
         st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
         st.session_state.active_view = "home"
@@ -187,6 +195,7 @@ with header_col3:
         st.session_state.selected_customer = "🟡 MTN"
         st.session_state.active_view = "home"
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 selected_customer = st.session_state.selected_customer
 
