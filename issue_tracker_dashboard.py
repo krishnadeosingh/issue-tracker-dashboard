@@ -112,6 +112,12 @@ st.markdown("""
         text-align: center;
         margin-bottom: 10px;
     }
+    /* Customer button overrides - smaller height for header buttons */
+    [data-testid="stHorizontalBlock"]:first-of-type .stButton > button {
+        min-height: 45px !important;
+        padding: 8px 15px !important;
+        font-size: 0.85rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -165,22 +171,31 @@ CATEGORY_ICONS = {
 # Session state
 if "active_view" not in st.session_state:
     st.session_state.active_view = "home"
+if "selected_customer" not in st.session_state:
+    st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
 
-# ===== HEADER WITH CUSTOMER TOGGLE =====
-header_col1, header_col2, header_col3 = st.columns([1, 2, 1])
-with header_col2:
+# ===== HEADER WITH CUSTOMER BUTTONS =====
+header_col1, header_col2, header_col3, header_col4 = st.columns([2, 2, 1, 1])
+with header_col1:
     st.markdown("""
-    <div style="text-align: center;">
-        <h1 style="color: #00d4ff; margin-bottom: 0;">🛡️ GNOC Issue Tracker</h1>
+    <div style="text-align: left; padding-top: 5px;">
+        <h1 style="color: #00d4ff; margin-bottom: 0; font-size: 1.8rem;">🛡️ GNOC Issue Tracker</h1>
     </div>
     """, unsafe_allow_html=True)
 
 with header_col3:
-    selected_customer = st.selectbox(
-        "Customer",
-        list(CUSTOMERS.keys()),
-        label_visibility="collapsed"
-    )
+    if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
+        st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
+        st.session_state.active_view = "home"
+        st.rerun()
+
+with header_col4:
+    if st.button("🟡 MTN", key="btn_mtn", use_container_width=True):
+        st.session_state.selected_customer = "🟡 MTN"
+        st.session_state.active_view = "home"
+        st.rerun()
+
+selected_customer = st.session_state.selected_customer
 
 # Load data for selected customer
 customer_config = CUSTOMERS[selected_customer]
