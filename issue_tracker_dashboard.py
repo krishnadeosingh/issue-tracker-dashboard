@@ -107,12 +107,6 @@ st.markdown("""
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
     }
-    /* Customer button overrides - smaller height for header buttons */
-    [data-testid="stHorizontalBlock"]:first-of-type .stButton > button {
-        min-height: 45px !important;
-        padding: 8px 15px !important;
-        font-size: 0.85rem !important;
-    }
     /* Reduce block gaps */
     .block-container {
         padding-top: 1rem !important;
