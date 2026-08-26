@@ -174,6 +174,16 @@ with header_col2:
     """, unsafe_allow_html=True)
 
 with header_col3:
+    st.markdown("""
+    <style>
+        div[data-testid="stColumn"]:last-child .stButton > button {
+            min-height: 35px !important;
+            padding: 5px 10px !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     if st.button("🔵 Airtel Africa / OBF", key="btn_aa", use_container_width=True):
         st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
         st.session_state.active_view = "home"
