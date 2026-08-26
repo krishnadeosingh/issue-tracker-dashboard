@@ -337,6 +337,15 @@ top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A
 OPCO_ALIASES = {
     "Africa": "South Africa",
 }
+
+# Region to individual OPCOs mapping
+REGION_MAPPING = {
+    "airtel east": ["Malawi", "Madagascar", "Zambia"],
+    "airtel-west": ["Niger", "Gabon"],
+    "airtel west": ["Niger", "Gabon"],
+    "ndc": ["Tchad", "DRC", "Nigeria"],
+}
+
 # OPCOs to expand to all individual OPCOs (any entry containing these patterns)
 OPCO_EXPAND_ALL = {"ALL MTN"}
 OPCO_EXPAND_ALL_PATTERNS = ["all airtel", "all africa", "all opco"]
@@ -358,6 +367,10 @@ def get_all_individual_opcos(sheets_data):
                         continue
                     if any(p in o.lower() for p in OPCO_EXPAND_ALL_PATTERNS):
                         continue
+                    # Check if it's a region name
+                    if o.lower() in REGION_MAPPING:
+                        opcos.update(REGION_MAPPING[o.lower()])
+                        continue
                     o = OPCO_ALIASES.get(o, o)
                     opcos.add(o)
     return opcos
@@ -373,6 +386,9 @@ def normalize_opcos(raw_value, all_individual_opcos):
         # Check if it's an "ALL" type entry
         if o in OPCO_EXPAND_ALL or any(p in o.lower() for p in OPCO_EXPAND_ALL_PATTERNS):
             result.extend(all_individual_opcos)
+        # Check if it's a region name
+        elif o.lower() in REGION_MAPPING:
+            result.extend(REGION_MAPPING[o.lower()])
         else:
             o = OPCO_ALIASES.get(o, o)
             result.append(o)
