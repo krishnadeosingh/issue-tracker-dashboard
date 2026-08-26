@@ -93,10 +93,10 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
         border: 1px solid #4a4a8a !important;
         border-radius: 12px !important;
-        padding: 20px !important;
+        padding: 12px !important;
         color: white !important;
         transition: all 0.3s !important;
-        min-height: 140px !important;
+        min-height: 100px !important;
     }
     .stButton > button:hover {
         border-color: #00d4ff !important;
