@@ -337,12 +337,13 @@ top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A
 OPCO_ALIASES = {
     "Africa": "South Africa",
 }
-# OPCOs to expand to all individual OPCOs
+# OPCOs to expand to all individual OPCOs (any entry containing these patterns)
 OPCO_EXPAND_ALL = {"ALL MTN"}
+OPCO_EXPAND_ALL_PATTERNS = ["all airtel", "all africa", "all opco"]
 
 
 def get_all_individual_opcos(sheets_data):
-    """Get all individual OPCOs (excluding ALL MTN and Africa alias)."""
+    """Get all individual OPCOs (excluding group names)."""
     opcos = set()
     for df in sheets_data.values():
         opco_col = [c for c in df.columns if "opco" in c.lower()]
@@ -350,9 +351,15 @@ def get_all_individual_opcos(sheets_data):
             for val in df[opco_col[0]].dropna().str.strip().unique():
                 for o in str(val).split(","):
                     o = o.strip()
-                    if o and o not in OPCO_EXPAND_ALL:
-                        o = OPCO_ALIASES.get(o, o)
-                        opcos.add(o)
+                    if not o:
+                        continue
+                    # Skip group entries
+                    if o in OPCO_EXPAND_ALL:
+                        continue
+                    if any(p in o.lower() for p in OPCO_EXPAND_ALL_PATTERNS):
+                        continue
+                    o = OPCO_ALIASES.get(o, o)
+                    opcos.add(o)
     return opcos
 
 
@@ -363,7 +370,8 @@ def normalize_opcos(raw_value, all_individual_opcos):
         o = o.strip()
         if not o or o == "nan":
             continue
-        if o in OPCO_EXPAND_ALL:
+        # Check if it's an "ALL" type entry
+        if o in OPCO_EXPAND_ALL or any(p in o.lower() for p in OPCO_EXPAND_ALL_PATTERNS):
             result.extend(all_individual_opcos)
         else:
             o = OPCO_ALIASES.get(o, o)
