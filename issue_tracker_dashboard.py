@@ -115,7 +115,7 @@ st.markdown("""
 EXCEL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Issue Tracker M.xlsx")
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_all_sheets():
     xlsx = pd.ExcelFile(EXCEL_FILE)
     sheets = {}
