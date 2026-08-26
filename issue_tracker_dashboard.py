@@ -88,7 +88,6 @@ st.markdown("""
     hr {
         border-color: #4a4a8a;
     }
-    /* Button styling for KPIs */
     .stButton > button {
         width: 100%;
         background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5e 100%) !important;
@@ -108,24 +107,40 @@ st.markdown("""
         border-color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0,212,255,0.5) !important;
     }
+    /* Customer toggle styling */
+    .customer-toggle {
+        text-align: center;
+        margin-bottom: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Load data
-EXCEL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Issue Tracker AA_OBF.xlsx")
+# Customer configurations
+CUSTOMERS = {
+    "🔵 Airtel Africa / OBF": {
+        "file": "Issue Tracker AA_OBF.xlsx",
+        "color": "#00d4ff",
+        "accent": "#1e3a5f"
+    },
+    "🟡 MTN": {
+        "file": "Issue Tracker  MTN.xlsx",
+        "color": "#ffc107",
+        "accent": "#5f4b1e"
+    }
+}
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 @st.cache_data(ttl=300)
-def load_all_sheets():
-    xlsx = pd.ExcelFile(EXCEL_FILE)
+def load_all_sheets(file_path):
+    xlsx = pd.ExcelFile(file_path)
     sheets = {}
     for name in xlsx.sheet_names:
         df = pd.read_excel(xlsx, sheet_name=name)
         sheets[name] = df
     return sheets
 
-
-sheets = load_all_sheets()
 
 # Category colors & icons
 CATEGORY_COLORS = {
@@ -147,28 +162,61 @@ CATEGORY_ICONS = {
     "EtigerNG Issue ": "🖥️"
 }
 
-# Compute global stats
-total_issues = sum(len(df) for df in sheets.values())
-top_category = max(sheets.items(), key=lambda x: len(x[1]))
-all_opcos = set()
-opco_data_map = {}
-for name, df in sheets.items():
-    opco_col = [c for c in df.columns if "opco" in c.lower()]
-    if opco_col:
-        opcos = df[opco_col[0]].dropna().str.strip().unique()
-        all_opcos.update(opcos)
-        for opco in opcos:
-            if opco not in opco_data_map:
-                opco_data_map[opco] = []
-            opco_data_map[opco].append(name)
-
-# Session state for view management
+# Session state
 if "active_view" not in st.session_state:
     st.session_state.active_view = "home"
 
+# ===== HEADER WITH CUSTOMER TOGGLE =====
+header_col1, header_col2, header_col3 = st.columns([1, 2, 1])
+with header_col2:
+    st.markdown("""
+    <div style="text-align: center;">
+        <h1 style="color: #00d4ff; margin-bottom: 0;">🛡️ GNOC Issue Tracker</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+with header_col3:
+    selected_customer = st.selectbox(
+        "Customer",
+        list(CUSTOMERS.keys()),
+        label_visibility="collapsed"
+    )
+
+# Load data for selected customer
+customer_config = CUSTOMERS[selected_customer]
+excel_path = os.path.join(BASE_DIR, customer_config["file"])
+
+if not os.path.exists(excel_path):
+    st.error(f"File not found: {customer_config['file']}")
+    st.stop()
+
+sheets = load_all_sheets(excel_path)
+customer_color = customer_config["color"]
+
+# Show which customer is selected
+st.markdown(f"""
+<div style="text-align: center; margin-bottom: 20px;">
+    <span style="background: {customer_color}22; border: 1px solid {customer_color}; 
+                 padding: 5px 20px; border-radius: 20px; color: {customer_color};
+                 font-weight: 600; font-size: 0.9rem;">
+        Viewing: {selected_customer}
+    </span>
+</div>
+""", unsafe_allow_html=True)
+
+# Compute global stats
+total_issues = sum(len(df) for df in sheets.values())
+non_empty_sheets = {k: v for k, v in sheets.items() if len(v) > 0}
+top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A", pd.DataFrame())
+all_opcos = set()
+for name, df in sheets.items():
+    opco_col = [c for c in df.columns if "opco" in c.lower()]
+    if opco_col:
+        all_opcos.update(df[opco_col[0]].dropna().str.strip().unique())
+
 # Sidebar
 with st.sidebar:
-    st.markdown("## 🛡️ GNOC Issue Tracker")
+    st.markdown(f"## 🛡️ {selected_customer}")
     st.markdown("---")
     
     if st.button("🏠 Home Dashboard", use_container_width=True):
@@ -179,8 +227,9 @@ with st.sidebar:
         st.session_state.active_view = "total_issues"
     if st.button("📂 Categories View", use_container_width=True):
         st.session_state.active_view = "categories"
-    if st.button(f"🔥 Top: {top_category[0].strip()}", use_container_width=True):
-        st.session_state.active_view = "top_category"
+    if top_category[0] != "N/A":
+        if st.button(f"🔥 Top: {top_category[0].strip()}", use_container_width=True):
+            st.session_state.active_view = "top_category"
     if st.button("🌍 OPCOs View", use_container_width=True):
         st.session_state.active_view = "opcos"
     
@@ -193,14 +242,14 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown(f"**Last Updated:** {datetime.now().strftime('%d %b %Y, %H:%M')}")
+    st.markdown(f"**Total Issues:** {total_issues}")
 
 
 # ========== HOME VIEW ==========
 if st.session_state.active_view == "home":
-    st.markdown("""
-    <div class="main-header">
-        <h1>🛡️ GNOC Issue Tracker Dashboard</h1>
-        <p>Click any card below to drill down into details</p>
+    st.markdown(f"""
+    <div style="text-align: center; margin-bottom: 20px;">
+        <p style="color: #a0a0c0;">Click any card below to drill down into details</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -213,7 +262,7 @@ if st.session_state.active_view == "home":
             st.rerun()
     
     with col2:
-        if st.button(f"📂\n\n**{len(sheets)}**\n\nCATEGORIES", key="kpi_cat"):
+        if st.button(f"📂\n\n**{len(non_empty_sheets)}**\n\nACTIVE CATEGORIES", key="kpi_cat"):
             st.session_state.active_view = "categories"
             st.rerun()
     
@@ -240,31 +289,34 @@ if st.session_state.active_view == "home":
         }).sort_values("Count", ascending=True)
         
         fig = px.bar(chart_data, x="Count", y="Category", orientation="h",
-                     color="Count", color_continuous_scale=["#1e3a5f", "#00d4ff"], text="Count")
+                     color="Count", color_continuous_scale=["#1e3a5f", customer_color], text="Count")
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
             margin=dict(l=0, r=20, t=10, b=0), height=300,
             xaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)"), yaxis=dict(showgrid=False)
         )
-        fig.update_traces(textposition="outside", textfont=dict(color="#00d4ff"))
+        fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
         st.plotly_chart(fig, use_container_width=True)
     
     with col_right:
         st.markdown('<div class="section-header">🍩 Distribution</div>', unsafe_allow_html=True)
         pie_data = pd.DataFrame({
-            "Category": [k.strip() for k in sheets.keys()],
-            "Count": [len(v) for v in sheets.values()]
+            "Category": [k.strip() for k in sheets.keys() if len(sheets[k]) > 0],
+            "Count": [len(v) for v in sheets.values() if len(v) > 0]
         })
-        fig_pie = px.pie(pie_data, values="Count", names="Category",
-                         color_discrete_sequence=list(CATEGORY_COLORS.values()), hole=0.4)
-        fig_pie.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0),
-            height=300, legend=dict(font=dict(size=10))
-        )
-        fig_pie.update_traces(textinfo="percent+value", textfont=dict(color="white"))
-        st.plotly_chart(fig_pie, use_container_width=True)
+        if not pie_data.empty:
+            fig_pie = px.pie(pie_data, values="Count", names="Category",
+                             color_discrete_sequence=list(CATEGORY_COLORS.values()), hole=0.4)
+            fig_pie.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0),
+                height=300, legend=dict(font=dict(size=10))
+            )
+            fig_pie.update_traces(textinfo="percent+value", textfont=dict(color="white"))
+            st.plotly_chart(fig_pie, use_container_width=True)
+        else:
+            st.info("No issues recorded yet.")
     
     # Category cards (clickable)
     st.markdown('<div class="section-header">📋 Click a Category to Explore</div>', unsafe_allow_html=True)
@@ -279,10 +331,10 @@ if st.session_state.active_view == "home":
 
 # ========== TOTAL ISSUES VIEW ==========
 elif st.session_state.active_view == "total_issues":
-    st.markdown("""
+    st.markdown(f"""
     <div class="main-header">
         <h1>📊 All Issues Overview</h1>
-        <p>Complete view of all 34 issues across all categories</p>
+        <p>Complete view of all {total_issues} issues across all categories</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -304,30 +356,31 @@ elif st.session_state.active_view == "total_issues":
         recorder_counts = pd.Series(all_recorders).value_counts().reset_index()
         recorder_counts.columns = ["Recorder", "Issues Logged"]
         fig_rec = px.bar(recorder_counts, x="Recorder", y="Issues Logged",
-                         color="Issues Logged", color_continuous_scale=["#2d2d5e", "#00d4ff"], text="Issues Logged")
+                         color="Issues Logged", color_continuous_scale=["#2d2d5e", customer_color], text="Issues Logged")
         fig_rec.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=10, b=0), height=300,
             xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
         )
-        fig_rec.update_traces(textposition="outside", textfont=dict(color="#00d4ff"))
+        fig_rec.update_traces(textposition="outside", textfont=dict(color=customer_color))
         st.plotly_chart(fig_rec, use_container_width=True)
     
     # All data tables
     st.markdown('<div class="section-header">📑 All Issues by Category</div>', unsafe_allow_html=True)
     for name, df in sheets.items():
-        icon = CATEGORY_ICONS.get(name, "📄")
-        with st.expander(f"{icon} {name.strip()} — {len(df)} issue(s)", expanded=True):
-            st.dataframe(df, use_container_width=True, hide_index=True)
+        if len(df) > 0:
+            icon = CATEGORY_ICONS.get(name, "📄")
+            with st.expander(f"{icon} {name.strip()} — {len(df)} issue(s)", expanded=True):
+                st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 # ========== CATEGORIES VIEW ==========
 elif st.session_state.active_view == "categories":
-    st.markdown("""
+    st.markdown(f"""
     <div class="main-header">
         <h1>📂 All Categories</h1>
-        <p>7 issue categories tracked — click any to drill down</p>
+        <p>{len(non_empty_sheets)} active categories with issues</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -337,21 +390,20 @@ elif st.session_state.active_view == "categories":
     
     st.markdown("---")
     
-    # Category comparison chart
     chart_data = pd.DataFrame({
         "Category": [k.strip() for k in sheets.keys()],
         "Count": [len(v) for v in sheets.values()]
     }).sort_values("Count", ascending=False)
     
     fig = px.bar(chart_data, x="Category", y="Count",
-                 color="Count", color_continuous_scale=["#1e3a5f", "#00d4ff"], text="Count")
+                 color="Count", color_continuous_scale=["#1e3a5f", customer_color], text="Count")
     fig.update_layout(
         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
         margin=dict(l=0, r=0, t=10, b=0), height=350,
         xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
     )
-    fig.update_traces(textposition="outside", textfont=dict(color="#00d4ff"))
+    fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
     st.plotly_chart(fig, use_container_width=True)
     
     # Clickable category buttons
@@ -360,7 +412,6 @@ elif st.session_state.active_view == "categories":
     for i, (name, df) in enumerate(sheets.items()):
         with cols[i % 4]:
             icon = CATEGORY_ICONS.get(name, "📄")
-            color = CATEGORY_COLORS.get(name, "#00d4ff")
             if st.button(f"{icon}\n\n**{len(df)} issues**\n\n{name.strip()}", key=f"catview_{name}", use_container_width=True):
                 st.session_state.active_view = f"sheet_{name}"
                 st.rerun()
@@ -371,7 +422,7 @@ elif st.session_state.active_view == "top_category":
     name = top_category[0]
     df = top_category[1]
     icon = CATEGORY_ICONS.get(name, "📄")
-    color = CATEGORY_COLORS.get(name, "#00d4ff")
+    color = CATEGORY_COLORS.get(name, customer_color)
     
     st.markdown(f"""
     <div class="main-header">
@@ -429,7 +480,6 @@ elif st.session_state.active_view == "opcos":
     
     # OPCO issue count
     opco_issue_counts = {}
-    opco_issues_detail = {}
     for name, df in sheets.items():
         opco_col = [c for c in df.columns if "opco" in c.lower()]
         if opco_col:
@@ -437,17 +487,13 @@ elif st.session_state.active_view == "opcos":
                 opco = str(row[opco_col[0]]).strip()
                 if opco and opco != "nan":
                     opco_issue_counts[opco] = opco_issue_counts.get(opco, 0) + 1
-                    if opco not in opco_issues_detail:
-                        opco_issues_detail[opco] = []
-                    opco_issues_detail[opco].append({"Category": name.strip(), **row.to_dict()})
     
-    # Bar chart
     if opco_issue_counts:
         opco_df = pd.DataFrame(list(opco_issue_counts.items()), columns=["OPCO", "Issues"])
         opco_df = opco_df.sort_values("Issues", ascending=False)
         
         fig = px.bar(opco_df, x="OPCO", y="Issues", color="Issues",
-                     color_continuous_scale=["#1e3a5f", "#00d4ff"], text="Issues")
+                     color_continuous_scale=["#1e3a5f", customer_color], text="Issues")
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
@@ -455,25 +501,26 @@ elif st.session_state.active_view == "opcos":
             xaxis=dict(showgrid=False, tickangle=-45),
             yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
         )
-        fig.update_traces(textposition="outside", textfont=dict(color="#00d4ff"))
+        fig.update_traces(textposition="outside", textfont=dict(color=customer_color))
         st.plotly_chart(fig, use_container_width=True)
     
     # OPCO selector
-    st.markdown('<div class="section-header">🔍 Select an OPCO for Details</div>', unsafe_allow_html=True)
-    selected_opco = st.selectbox("Choose OPCO", sorted(all_opcos))
-    
-    if selected_opco:
-        st.markdown(f'<div class="section-header">📋 Issues for: {selected_opco}</div>', unsafe_allow_html=True)
+    if all_opcos:
+        st.markdown('<div class="section-header">🔍 Select an OPCO for Details</div>', unsafe_allow_html=True)
+        selected_opco = st.selectbox("Choose OPCO", sorted(all_opcos))
         
-        # Find all issues for this OPCO
-        for name, df in sheets.items():
-            opco_col = [c for c in df.columns if "opco" in c.lower()]
-            if opco_col:
-                opco_filtered = df[df[opco_col[0]].astype(str).str.strip() == selected_opco]
-                if not opco_filtered.empty:
-                    icon = CATEGORY_ICONS.get(name, "📄")
-                    with st.expander(f"{icon} {name.strip()} — {len(opco_filtered)} issue(s)", expanded=True):
-                        st.dataframe(opco_filtered, use_container_width=True, hide_index=True)
+        if selected_opco:
+            st.markdown(f'<div class="section-header">📋 Issues for: {selected_opco}</div>', unsafe_allow_html=True)
+            for name, df in sheets.items():
+                opco_col = [c for c in df.columns if "opco" in c.lower()]
+                if opco_col:
+                    opco_filtered = df[df[opco_col[0]].astype(str).str.strip() == selected_opco]
+                    if not opco_filtered.empty:
+                        icon = CATEGORY_ICONS.get(name, "📄")
+                        with st.expander(f"{icon} {name.strip()} — {len(opco_filtered)} issue(s)", expanded=True):
+                            st.dataframe(opco_filtered, use_container_width=True, hide_index=True)
+    else:
+        st.info("No OPCO data available for this customer.")
 
 
 # ========== INDIVIDUAL SHEET VIEW ==========
@@ -481,7 +528,7 @@ elif st.session_state.active_view.startswith("sheet_"):
     sheet_name = st.session_state.active_view.replace("sheet_", "")
     df = sheets[sheet_name]
     icon = CATEGORY_ICONS.get(sheet_name, "📄")
-    color = CATEGORY_COLORS.get(sheet_name, "#00d4ff")
+    color = CATEGORY_COLORS.get(sheet_name, customer_color)
     
     st.markdown(f"""
     <div class="main-header">
@@ -496,80 +543,83 @@ elif st.session_state.active_view.startswith("sheet_"):
     
     st.markdown("---")
     
-    # KPIs
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Issues", len(df))
-    col2.metric("Data Fields", len(df.columns))
-    rec_col = [c for c in df.columns if "recorded" in c.lower()]
-    if rec_col:
-        col3.metric("Recorders", df[rec_col[0]].dropna().nunique())
+    if len(df) == 0:
+        st.info("No issues recorded in this category.")
     else:
-        col3.metric("Recorders", "N/A")
-    
-    st.markdown("---")
-    
-    # Filters
-    st.markdown('<div class="section-header">🔍 Filters</div>', unsafe_allow_html=True)
-    filter_cols = st.columns(3)
-    filtered_df = df.copy()
-    
-    filterable_columns = [col for col in df.columns if df[col].dtype == "object" and 1 < df[col].nunique() <= 20]
-    
-    for i, col in enumerate(filterable_columns[:3]):
-        with filter_cols[i % 3]:
-            unique_vals = ["All"] + sorted([str(v) for v in df[col].dropna().unique()])
-            selected = st.selectbox(f"{col}", unique_vals, key=f"filter_{sheet_name}_{col}")
-            if selected != "All":
-                filtered_df = filtered_df[filtered_df[col].astype(str) == selected]
-    
-    # Charts
-    if len(df) > 1:
-        col_l, col_r = st.columns(2)
-        
+        # KPIs
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Issues", len(df))
+        col2.metric("Data Fields", len(df.columns))
+        rec_col = [c for c in df.columns if "recorded" in c.lower()]
         if rec_col:
-            with col_l:
-                st.markdown('<div class="section-header">👤 By Recorder</div>', unsafe_allow_html=True)
-                rec_data = filtered_df[rec_col[0]].value_counts().reset_index()
-                rec_data.columns = ["Recorder", "Count"]
-                fig = px.pie(rec_data, values="Count", names="Recorder",
-                            color_discrete_sequence=px.colors.sequential.Tealgrn, hole=0.3)
-                fig.update_layout(
-                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0), height=250
-                )
-                st.plotly_chart(fig, use_container_width=True)
+            col3.metric("Recorders", df[rec_col[0]].dropna().nunique())
+        else:
+            col3.metric("Recorders", "N/A")
         
-        opco_col = [c for c in df.columns if "opco" in c.lower()]
-        if opco_col:
-            with col_r:
-                st.markdown('<div class="section-header">🌍 By OPCO</div>', unsafe_allow_html=True)
-                opco_data = filtered_df[opco_col[0]].value_counts().reset_index()
-                opco_data.columns = ["OPCO", "Count"]
-                fig2 = px.bar(opco_data, x="OPCO", y="Count", color="Count",
-                             color_continuous_scale=["#1e3a5f", color], text="Count")
-                fig2.update_layout(
-                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
-                    margin=dict(l=0, r=0, t=10, b=0), height=250,
-                    xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
-                )
-                fig2.update_traces(textposition="outside", textfont=dict(color=color))
-                st.plotly_chart(fig2, use_container_width=True)
-    
-    # Data table
-    st.markdown('<div class="section-header">📊 Issue Details</div>', unsafe_allow_html=True)
-    st.dataframe(filtered_df, use_container_width=True, hide_index=True,
-                 height=min(500, (len(filtered_df) + 1) * 50))
-    
-    # Download
-    st.markdown("---")
-    col_dl1, col_dl2, _ = st.columns([1, 1, 3])
-    with col_dl1:
-        csv = filtered_df.to_csv(index=False)
-        st.download_button("📥 Download CSV", data=csv,
-                          file_name=f"{sheet_name.strip()}.csv", mime="text/csv", use_container_width=True)
-    with col_dl2:
-        st.download_button("📥 Download Excel", data=open(EXCEL_FILE, "rb").read(),
-                          file_name="Issue Tracker M.xlsx",
-                          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                          use_container_width=True)
+        st.markdown("---")
+        
+        # Filters
+        st.markdown('<div class="section-header">🔍 Filters</div>', unsafe_allow_html=True)
+        filter_cols = st.columns(3)
+        filtered_df = df.copy()
+        
+        filterable_columns = [col for col in df.columns if df[col].dtype == "object" and 1 < df[col].nunique() <= 20]
+        
+        for i, col in enumerate(filterable_columns[:3]):
+            with filter_cols[i % 3]:
+                unique_vals = ["All"] + sorted([str(v) for v in df[col].dropna().unique()])
+                selected = st.selectbox(f"{col}", unique_vals, key=f"filter_{sheet_name}_{col}")
+                if selected != "All":
+                    filtered_df = filtered_df[filtered_df[col].astype(str) == selected]
+        
+        # Charts
+        if len(df) > 1:
+            col_l, col_r = st.columns(2)
+            
+            if rec_col:
+                with col_l:
+                    st.markdown('<div class="section-header">👤 By Recorder</div>', unsafe_allow_html=True)
+                    rec_data = filtered_df[rec_col[0]].value_counts().reset_index()
+                    rec_data.columns = ["Recorder", "Count"]
+                    fig = px.pie(rec_data, values="Count", names="Recorder",
+                                color_discrete_sequence=px.colors.sequential.Tealgrn, hole=0.3)
+                    fig.update_layout(
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#a0a0c0"), margin=dict(l=0, r=0, t=10, b=0), height=250
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            opco_col = [c for c in df.columns if "opco" in c.lower()]
+            if opco_col:
+                with col_r:
+                    st.markdown('<div class="section-header">🌍 By OPCO</div>', unsafe_allow_html=True)
+                    opco_data = filtered_df[opco_col[0]].value_counts().reset_index()
+                    opco_data.columns = ["OPCO", "Count"]
+                    fig2 = px.bar(opco_data, x="OPCO", y="Count", color="Count",
+                                 color_continuous_scale=["#1e3a5f", color], text="Count")
+                    fig2.update_layout(
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#a0a0c0"), showlegend=False, coloraxis_showscale=False,
+                        margin=dict(l=0, r=0, t=10, b=0), height=250,
+                        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="rgba(74,74,138,0.3)")
+                    )
+                    fig2.update_traces(textposition="outside", textfont=dict(color=color))
+                    st.plotly_chart(fig2, use_container_width=True)
+        
+        # Data table
+        st.markdown('<div class="section-header">📊 Issue Details</div>', unsafe_allow_html=True)
+        st.dataframe(filtered_df, use_container_width=True, hide_index=True,
+                     height=min(500, (len(filtered_df) + 1) * 50))
+        
+        # Download
+        st.markdown("---")
+        col_dl1, col_dl2, _ = st.columns([1, 1, 3])
+        with col_dl1:
+            csv = filtered_df.to_csv(index=False)
+            st.download_button("📥 Download CSV", data=csv,
+                              file_name=f"{sheet_name.strip()}.csv", mime="text/csv", use_container_width=True)
+        with col_dl2:
+            st.download_button("📥 Download Excel", data=open(excel_path, "rb").read(),
+                              file_name=os.path.basename(excel_path),
+                              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                              use_container_width=True)
