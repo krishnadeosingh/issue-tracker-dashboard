@@ -226,7 +226,11 @@ all_opcos = set()
 for name, df in sheets.items():
     opco_col = [c for c in df.columns if "opco" in c.lower()]
     if opco_col:
-        all_opcos.update(df[opco_col[0]].dropna().str.strip().unique())
+        for val in df[opco_col[0]].dropna().str.strip().unique():
+            for opco in str(val).split(","):
+                opco = opco.strip()
+                if opco:
+                    all_opcos.add(opco)
 
 # Sidebar
 with st.sidebar:
@@ -462,7 +466,13 @@ elif st.session_state.active_view == "top_category":
     opco_col = [c for c in df.columns if "opco" in c.lower()]
     if opco_col:
         st.markdown('<div class="section-header">🌍 By OPCO</div>', unsafe_allow_html=True)
-        opco_data = df[opco_col[0]].value_counts().reset_index()
+        opco_list = []
+        for val in df[opco_col[0]].dropna():
+            for o in str(val).split(","):
+                o = o.strip()
+                if o:
+                    opco_list.append(o)
+        opco_data = pd.Series(opco_list).value_counts().reset_index()
         opco_data.columns = ["OPCO", "Count"]
         fig = px.pie(opco_data, values="Count", names="OPCO",
                      color_discrete_sequence=px.colors.sequential.Tealgrn, hole=0.3)
@@ -498,9 +508,12 @@ elif st.session_state.active_view == "opcos":
         opco_col = [c for c in df.columns if "opco" in c.lower()]
         if opco_col:
             for _, row in df.iterrows():
-                opco = str(row[opco_col[0]]).strip()
-                if opco and opco != "nan":
-                    opco_issue_counts[opco] = opco_issue_counts.get(opco, 0) + 1
+                raw_opco = str(row[opco_col[0]]).strip()
+                if raw_opco and raw_opco != "nan":
+                    for opco in raw_opco.split(","):
+                        opco = opco.strip()
+                        if opco:
+                            opco_issue_counts[opco] = opco_issue_counts.get(opco, 0) + 1
     
     if opco_issue_counts:
         opco_df = pd.DataFrame(list(opco_issue_counts.items()), columns=["OPCO", "Issues"])
@@ -528,7 +541,9 @@ elif st.session_state.active_view == "opcos":
             for name, df in sheets.items():
                 opco_col = [c for c in df.columns if "opco" in c.lower()]
                 if opco_col:
-                    opco_filtered = df[df[opco_col[0]].astype(str).str.strip() == selected_opco]
+                    opco_filtered = df[df[opco_col[0]].astype(str).apply(
+                        lambda x: selected_opco in [o.strip() for o in x.split(",")]
+                    )]
                     if not opco_filtered.empty:
                         icon = CATEGORY_ICONS.get(name, "📄")
                         with st.expander(f"{icon} {name.strip()} — {len(opco_filtered)} issue(s)", expanded=True):
@@ -607,7 +622,14 @@ elif st.session_state.active_view.startswith("sheet_"):
             if opco_col:
                 with col_r:
                     st.markdown('<div class="section-header">🌍 By OPCO</div>', unsafe_allow_html=True)
-                    opco_data = filtered_df[opco_col[0]].value_counts().reset_index()
+                    # Split combined OPCOs and count individually
+                    opco_list = []
+                    for val in filtered_df[opco_col[0]].dropna():
+                        for o in str(val).split(","):
+                            o = o.strip()
+                            if o:
+                                opco_list.append(o)
+                    opco_data = pd.Series(opco_list).value_counts().reset_index()
                     opco_data.columns = ["OPCO", "Count"]
                     fig2 = px.bar(opco_data, x="OPCO", y="Count", color="Count",
                                  color_continuous_scale=["#1e3a5f", color], text="Count")
