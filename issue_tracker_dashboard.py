@@ -29,12 +29,13 @@ st.markdown("""
         background: rgba(15, 23, 42, 0.6);
         border: 1px solid rgba(59, 130, 246, 0.15);
         border-radius: 16px;
-        padding: 24px 20px;
+        padding: 12px 10px;
         text-align: center;
         backdrop-filter: blur(20px);
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        animation: fadeInUp 0.6s ease forwards;
     }
     .kpi-card::before {
         content: '';
@@ -51,23 +52,47 @@ st.markdown("""
         box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     }
     .kpi-card:hover::before { opacity: 1; }
+    
+    /* Animated number pulse */
+    @keyframes countPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .kpi-card:hover .kpi-value {
+        animation: countPulse 0.5s ease;
+    }
+    
+    /* Sparkline glow on hover */
+    .kpi-card:hover svg polyline {
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    
+    /* Staggered card animations */
+    .kpi-card-1 { animation-delay: 0s; }
+    .kpi-card-2 { animation-delay: 0.15s; }
+    .kpi-card-3 { animation-delay: 0.3s; }
+    .kpi-card-4 { animation-delay: 0.45s; }
+    
+    /* Cursor pointer on KPI cards */
+    .kpi-card { cursor: pointer; }
     .kpi-value {
-        font-size: 2.2rem;
+        font-size: 1.2rem;
         font-weight: 700;
-        margin: 8px 0;
+        margin: 3px 0;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     .kpi-label {
-        font-size: 0.8rem;
+        font-size: 0.6rem;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
     .kpi-icon {
-        font-size: 1.5rem;
-        margin-bottom: 5px;
+        font-size: 1rem;
+        margin-bottom: 2px;
         opacity: 0.8;
     }
     
@@ -565,28 +590,91 @@ if st.session_state.active_view == "home":
     </div>
     """, unsafe_allow_html=True)
     
-    # Clickable KPI Cards
+    # Generate sparkline data (last 12 months of issues)
+    def get_monthly_counts(sheets_data):
+        all_dates = []
+        for df in sheets_data.values():
+            if "Date" in df.columns:
+                dates = pd.to_datetime(df["Date"], errors="coerce").dropna()
+                all_dates.extend(dates.tolist())
+        if not all_dates:
+            return [0] * 12
+        s = pd.Series(all_dates)
+        monthly = s.dt.to_period("M").value_counts().sort_index()
+        return monthly.tail(12).tolist() or [0] * 12
+    
+    def make_sparkline_svg(values, color="#60a5fa", width=120, height=35):
+        if not values or max(values) == 0:
+            return ""
+        max_val = max(values)
+        points = []
+        for i, v in enumerate(values):
+            x = (i / max(len(values) - 1, 1)) * width
+            y = height - (v / max_val) * (height - 4) - 2
+            points.append(f"{x:.1f},{y:.1f}")
+        polyline = " ".join(points)
+        # Fill area
+        fill_points = f"0,{height} " + polyline + f" {width},{height}"
+        return f'''<svg width="{width}" height="{height}" style="display:block; margin:8px auto 0;">
+            <defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="{color}" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="{color}" stop-opacity="0.02"/>
+            </linearGradient></defs>
+            <polygon points="{fill_points}" fill="url(#sparkGrad)"/>
+            <polyline points="{polyline}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>'''
+    
+    spark_data = get_monthly_counts(sheets_raw)
+    
+    # KPI Cards with sparklines
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button(f"📊 Total Issues: {total_issues}", key="kpi_total"):
-            st.session_state.active_view = "total_issues"
-            st.rerun()
+        spark_svg = make_sparkline_svg(spark_data, "#60a5fa")
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-1" onclick="document.querySelectorAll('[data-testid=stButton]')[0].querySelector('button').click()">
+            <div style="font-size:1.6rem;">📊</div>
+            <div class="kpi-label">Total Issues</div>
+            <div class="kpi-value">{total_issues}</div>
+            {spark_svg}
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        if st.button(f"⏱️ Total Downtime: {total_downtime_str}", key="kpi_downtime"):
-            st.session_state.active_view = "total_issues"
-            st.rerun()
+        spark_svg2 = make_sparkline_svg(spark_data, "#a78bfa")
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-2">
+            <div style="font-size:1.6rem;">⏱️</div>
+            <div class="kpi-label">Total Downtime</div>
+            <div class="kpi-value">{total_downtime_str}</div>
+            {spark_svg2}
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        if st.button(f"🌍 Most Affected: {most_affected_opco} ({most_affected_opco_count})", key="kpi_opco"):
-            st.session_state.active_view = "opcos"
-            st.rerun()
+        spark_svg3 = make_sparkline_svg(spark_data, "#34d399")
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-3">
+            <div style="font-size:1.6rem;">🌍</div>
+            <div class="kpi-label">Most Affected OPCO</div>
+            <div class="kpi-value" style="font-size: 0.9rem;">{most_affected_opco}</div>
+            <div style="color: #94a3b8; font-size: 0.6rem;">{most_affected_opco_count} issues</div>
+            {spark_svg3}
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
-        if st.button(f"🔥 Top: {top_category[0].strip()} ({len(top_category[1])})", key="kpi_top"):
-            st.session_state.active_view = "top_category"
-            st.rerun()
+        top_cat_name = top_category[0].strip() if top_category[0] != "N/A" else "N/A"
+        spark_svg4 = make_sparkline_svg(spark_data, "#f59e0b")
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-4">
+            <div style="font-size:1.6rem;">🔥</div>
+            <div class="kpi-label">Top Category</div>
+            <div class="kpi-value" style="font-size: 0.9rem;">{top_cat_name}</div>
+            <div style="color: #94a3b8; font-size: 0.6rem;">{len(top_category[1])} issues</div>
+            {spark_svg4}
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
