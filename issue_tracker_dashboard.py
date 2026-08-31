@@ -338,15 +338,13 @@ month_names = ["January", "February", "March", "April", "May", "June",
                "July", "August", "September", "October", "November", "December"]
 
 with header_col1:
-    st.markdown("<p style='font-size:0.7rem; color:#a0a0c0; margin:0; padding-top:15px; text-align:center;'>📅 Filter by Period</p>", unsafe_allow_html=True)
     yr_col, mn_col = st.columns(2)
     with yr_col:
         selected_year = st.selectbox(
-            "Year",
+            "📅 Year",
             options=["All Years"] + [str(y) for y in all_years],
             index=0,
-            key="year_filter",
-            label_visibility="collapsed"
+            key="year_filter"
         )
     with mn_col:
         if selected_year == "All Years":
@@ -355,11 +353,10 @@ with header_col1:
             available_months = sorted([m for y, m in all_dates if y == int(selected_year)])
             month_options = ["All Months"] + [month_names[m - 1] for m in available_months]
         selected_month_name = st.selectbox(
-            "Month",
+            "📅 Month",
             options=month_options,
             index=0,
-            key="month_filter",
-            label_visibility="collapsed"
+            key="month_filter"
         )
 
 # Filter sheets by selected year and month
