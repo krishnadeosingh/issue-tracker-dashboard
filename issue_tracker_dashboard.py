@@ -7,8 +7,8 @@ from datetime import datetime
 
 # Page config
 st.set_page_config(
-    page_title="GNOC Issue Tracker",
-    page_icon="🛡️",
+    page_title="NOC Insights Compass",
+    page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -282,13 +282,13 @@ if "active_view" not in st.session_state:
 if "selected_customer" not in st.session_state:
     st.session_state.selected_customer = "🔵 Airtel Africa / OBF"
 
-# ===== HEADER WITH CUSTOMER BUTTONS =====
-header_col1, header_col2, header_col3 = st.columns([1, 3, 1.5])
+# ===== HEADER WITH CUSTOMER BUTTONS + MONTH FILTER =====
+header_col1, header_col2, header_col3 = st.columns([1.5, 3, 1.5])
 
 with header_col2:
     st.markdown("""
     <div style="text-align: center; padding-top: 5px;">
-        <h1 style="font-size: 2rem; font-weight: 700; background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🛡️ GNOC Issue Tracker</h1>
+        <h1 style="font-size: 2rem; font-weight: 700; margin: 0;"><span style="font-size: 2rem;">🧭</span> <span style="background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NOC Insights Compass</span></h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -316,8 +316,44 @@ if not os.path.exists(excel_path):
     st.error(f"File not found: {customer_config['file']}")
     st.stop()
 
-sheets = load_all_sheets(excel_path)
+sheets_raw = load_all_sheets(excel_path)
 customer_color = customer_config["color"]
+
+# --- Month Filter (next to customer buttons) ---
+all_months = set()
+for df in sheets_raw.values():
+    if "Date" in df.columns:
+        dates = pd.to_datetime(df["Date"], errors="coerce").dropna()
+        for d in dates:
+            all_months.add(d.strftime("%B %Y"))
+
+sorted_months = sorted(all_months, key=lambda x: datetime.strptime(x, "%B %Y"), reverse=True)
+
+with header_col1:
+    selected_month = st.selectbox(
+        "📅 Month",
+        options=["All Months"] + sorted_months,
+        index=0,
+        key="month_filter"
+    )
+
+# Filter sheets by selected month
+if selected_month != "All Months":
+    filter_date = datetime.strptime(selected_month, "%B %Y")
+    sheets = {}
+    for name, df in sheets_raw.items():
+        if "Date" in df.columns:
+            df_copy = df.copy()
+            df_copy["_parsed_date"] = pd.to_datetime(df_copy["Date"], errors="coerce")
+            filtered = df_copy[
+                (df_copy["_parsed_date"].dt.month == filter_date.month) &
+                (df_copy["_parsed_date"].dt.year == filter_date.year)
+            ].drop(columns=["_parsed_date"])
+            sheets[name] = filtered
+        else:
+            sheets[name] = df
+else:
+    sheets = sheets_raw
 
 # Show which customer is selected
 st.markdown(f"""
@@ -332,6 +368,41 @@ st.markdown(f"""
 total_issues = sum(len(df) for df in sheets.values())
 non_empty_sheets = {k: v for k, v in sheets.items() if len(v) > 0}
 top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A", pd.DataFrame())
+
+# Parse duration strings into total minutes
+import re
+def parse_duration_to_minutes(val):
+    """Parse various duration formats to total minutes."""
+    if pd.isna(val):
+        return 0
+    s = str(val).strip().lower()
+    total = 0
+    # Format: "00 HH : 30 MM" or "25 HH : 40 MM"
+    hh_mm = re.search(r'(\d+)\s*hh\s*:\s*(\d+)\s*mm', s)
+    if hh_mm:
+        return int(hh_mm.group(1)) * 60 + int(hh_mm.group(2))
+    # Format: "3 hours 30 minutes" / "1 hour 26 minutes"
+    hours = re.search(r'(\d+)\s*hours?', s)
+    mins = re.search(r'(\d+)\s*min(?:utes?|s)?', s)
+    if hours:
+        total += int(hours.group(1)) * 60
+    if mins:
+        total += int(mins.group(1))
+    # Format: "1hrs 30 mins"
+    hrs = re.search(r'(\d+)\s*hrs?', s)
+    if hrs and not hours:
+        total += int(hrs.group(1)) * 60
+    return total
+
+total_minutes = 0
+for df in sheets.values():
+    dur_col = [c for c in df.columns if 'duration' in c.lower()]
+    if dur_col:
+        total_minutes += df[dur_col[0]].apply(parse_duration_to_minutes).sum()
+
+total_hours = int(total_minutes // 60)
+remaining_mins = int(total_minutes % 60)
+total_downtime_str = f"{total_hours}h {remaining_mins}m"
 
 # OPCO normalization mappings
 OPCO_ALIASES = {
@@ -399,15 +470,24 @@ def normalize_opcos(raw_value, all_individual_opcos):
 all_individual_opcos = get_all_individual_opcos(sheets)
 
 all_opcos = set()
+opco_issue_counts_global = {}
 for name, df in sheets.items():
     opco_col = [c for c in df.columns if "opco" in c.lower()]
     if opco_col:
         for val in df[opco_col[0]].dropna().str.strip().unique():
             all_opcos.update(normalize_opcos(val, all_individual_opcos))
+        for _, row in df.iterrows():
+            raw_opco = str(row[opco_col[0]]).strip()
+            if raw_opco and raw_opco != "nan":
+                for opco in normalize_opcos(raw_opco, all_individual_opcos):
+                    opco_issue_counts_global[opco] = opco_issue_counts_global.get(opco, 0) + 1
+
+most_affected_opco = max(opco_issue_counts_global, key=opco_issue_counts_global.get) if opco_issue_counts_global else "N/A"
+most_affected_opco_count = opco_issue_counts_global.get(most_affected_opco, 0)
 
 # Sidebar
 with st.sidebar:
-    st.markdown(f"## 🛡️ {selected_customer}")
+    st.markdown(f"## 🧭 {selected_customer}")
     st.markdown("---")
     
     if st.button("🏠 Home Dashboard", use_container_width=True):
@@ -453,18 +533,18 @@ if st.session_state.active_view == "home":
             st.rerun()
     
     with col2:
-        if st.button(f"📂 Active Categories: {len(non_empty_sheets)}", key="kpi_cat"):
-            st.session_state.active_view = "categories"
+        if st.button(f"⏱️ Total Downtime: {total_downtime_str}", key="kpi_downtime"):
+            st.session_state.active_view = "total_issues"
             st.rerun()
     
     with col3:
-        if st.button(f"🔥 Top Category: {len(top_category[1])}", key="kpi_top"):
-            st.session_state.active_view = "top_category"
+        if st.button(f"🌍 Most Affected: {most_affected_opco} ({most_affected_opco_count})", key="kpi_opco"):
+            st.session_state.active_view = "opcos"
             st.rerun()
     
     with col4:
-        if st.button(f"🌍 OPCOs Affected: {len(all_opcos)}", key="kpi_opco"):
-            st.session_state.active_view = "opcos"
+        if st.button(f"🔥 Top: {top_category[0].strip()} ({len(top_category[1])})", key="kpi_top"):
+            st.session_state.active_view = "top_category"
             st.rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
