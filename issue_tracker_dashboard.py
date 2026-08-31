@@ -431,7 +431,15 @@ for df in sheets.values():
 
 total_hours = int(total_minutes // 60)
 remaining_mins = int(total_minutes % 60)
-total_downtime_str = f"{total_hours}h {remaining_mins}m"
+total_days = total_hours // 24
+remaining_hours = total_hours % 24
+
+if total_days > 0:
+    total_downtime_str = f"{total_days}d {remaining_hours}h {remaining_mins}m"
+elif total_hours > 0:
+    total_downtime_str = f"{total_hours}h {remaining_mins}m"
+else:
+    total_downtime_str = f"{remaining_mins}m"
 
 # OPCO normalization mappings
 OPCO_ALIASES = {
