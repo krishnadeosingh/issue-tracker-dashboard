@@ -338,7 +338,8 @@ with header_col1:
             "📅 Year",
             options=["All"] + [str(y) for y in all_years],
             index=0,
-            key="year_filter"
+            key="year_filter",
+            filter_mode="none"
         )
     with mn_col:
         if selected_year == "All":
@@ -350,7 +351,8 @@ with header_col1:
             "📅 Month",
             options=month_options,
             index=0,
-            key="month_filter"
+            key="month_filter",
+            filter_mode="none"
         )
 
 # Filter sheets by selected year and month
