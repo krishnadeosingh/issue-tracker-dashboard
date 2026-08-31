@@ -433,8 +433,12 @@ total_hours = int(total_minutes // 60)
 remaining_mins = int(total_minutes % 60)
 total_days = total_hours // 24
 remaining_hours = total_hours % 24
+total_months = total_days // 30
+remaining_days = total_days % 30
 
-if total_days > 0:
+if total_months > 0:
+    total_downtime_str = f"{total_months}mo {remaining_days}d {remaining_hours}h"
+elif total_days > 0:
     total_downtime_str = f"{total_days}d {remaining_hours}h {remaining_mins}m"
 elif total_hours > 0:
     total_downtime_str = f"{total_hours}h {remaining_mins}m"
