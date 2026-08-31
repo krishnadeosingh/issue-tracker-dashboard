@@ -373,32 +373,38 @@ top_category = max(sheets.items(), key=lambda x: len(x[1])) if sheets else ("N/A
 import re
 def parse_duration_to_minutes(val):
     """Parse various duration formats to total minutes."""
-    if pd.isna(val):
+    try:
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return 0
+        s = str(val).strip().lower()
+        if not s or s == 'nan' or s == 'nat':
+            return 0
+        total = 0
+        # Format: "00 HH : 30 MM" or "25 HH : 40 MM"
+        hh_mm = re.search(r'(\d+)\s*hh\s*:\s*(\d+)\s*mm', s)
+        if hh_mm:
+            return int(hh_mm.group(1)) * 60 + int(hh_mm.group(2))
+        # Format: "3 hours 30 minutes" / "1 hour 26 minutes"
+        hours = re.search(r'(\d+)\s*hours?', s)
+        mins = re.search(r'(\d+)\s*min(?:utes?|s)?', s)
+        if hours:
+            total += int(hours.group(1)) * 60
+        if mins:
+            total += int(mins.group(1))
+        # Format: "1hrs 30 mins"
+        hrs = re.search(r'(\d+)\s*hrs?', s)
+        if hrs and not hours:
+            total += int(hrs.group(1)) * 60
+        return total
+    except Exception:
         return 0
-    s = str(val).strip().lower()
-    total = 0
-    # Format: "00 HH : 30 MM" or "25 HH : 40 MM"
-    hh_mm = re.search(r'(\d+)\s*hh\s*:\s*(\d+)\s*mm', s)
-    if hh_mm:
-        return int(hh_mm.group(1)) * 60 + int(hh_mm.group(2))
-    # Format: "3 hours 30 minutes" / "1 hour 26 minutes"
-    hours = re.search(r'(\d+)\s*hours?', s)
-    mins = re.search(r'(\d+)\s*min(?:utes?|s)?', s)
-    if hours:
-        total += int(hours.group(1)) * 60
-    if mins:
-        total += int(mins.group(1))
-    # Format: "1hrs 30 mins"
-    hrs = re.search(r'(\d+)\s*hrs?', s)
-    if hrs and not hours:
-        total += int(hrs.group(1)) * 60
-    return total
 
 total_minutes = 0
 for df in sheets.values():
     dur_col = [c for c in df.columns if 'duration' in c.lower()]
-    if dur_col:
-        total_minutes += df[dur_col[0]].apply(parse_duration_to_minutes).sum()
+    if dur_col and len(df) > 0:
+        mins = df[dur_col[0]].apply(parse_duration_to_minutes)
+        total_minutes += int(mins.sum())
 
 total_hours = int(total_minutes // 60)
 remaining_mins = int(total_minutes % 60)
