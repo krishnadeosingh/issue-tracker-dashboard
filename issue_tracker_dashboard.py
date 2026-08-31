@@ -319,41 +319,58 @@ if not os.path.exists(excel_path):
 sheets_raw = load_all_sheets(excel_path)
 customer_color = customer_config["color"]
 
-# --- Month Filter (next to customer buttons) ---
-all_months = set()
+# --- Month & Year Filter (next to customer buttons) ---
+all_dates = set()
 for df in sheets_raw.values():
     if "Date" in df.columns:
         dates = pd.to_datetime(df["Date"], errors="coerce").dropna()
         for d in dates:
-            all_months.add(d.strftime("%B %Y"))
+            all_dates.add((d.year, d.month))
 
-sorted_months = sorted(all_months, key=lambda x: datetime.strptime(x, "%B %Y"), reverse=True)
+all_years = sorted(set(y for y, m in all_dates), reverse=True)
+month_names = ["January", "February", "March", "April", "May", "June",
+               "July", "August", "September", "October", "November", "December"]
 
 with header_col1:
-    selected_month = st.selectbox(
-        "📅 Month",
-        options=["All Months"] + sorted_months,
-        index=0,
-        key="month_filter"
-    )
+    yr_col, mn_col = st.columns(2)
+    with yr_col:
+        selected_year = st.selectbox(
+            "📅 Year",
+            options=["All"] + [str(y) for y in all_years],
+            index=0,
+            key="year_filter"
+        )
+    with mn_col:
+        if selected_year == "All":
+            month_options = ["All"]
+        else:
+            available_months = sorted([m for y, m in all_dates if y == int(selected_year)])
+            month_options = ["All"] + [month_names[m - 1] for m in available_months]
+        selected_month_name = st.selectbox(
+            "📅 Month",
+            options=month_options,
+            index=0,
+            key="month_filter"
+        )
 
-# Filter sheets by selected month
-if selected_month != "All Months":
-    filter_date = datetime.strptime(selected_month, "%B %Y")
+# Filter sheets by selected year and month
+if selected_year == "All":
+    sheets = sheets_raw
+else:
+    filter_year = int(selected_year)
+    filter_month = month_names.index(selected_month_name) + 1 if selected_month_name != "All" else None
     sheets = {}
     for name, df in sheets_raw.items():
         if "Date" in df.columns:
             df_copy = df.copy()
             df_copy["_parsed_date"] = pd.to_datetime(df_copy["Date"], errors="coerce")
-            filtered = df_copy[
-                (df_copy["_parsed_date"].dt.month == filter_date.month) &
-                (df_copy["_parsed_date"].dt.year == filter_date.year)
-            ].drop(columns=["_parsed_date"])
+            mask = df_copy["_parsed_date"].dt.year == filter_year
+            if filter_month:
+                mask = mask & (df_copy["_parsed_date"].dt.month == filter_month)
+            filtered = df_copy[mask].drop(columns=["_parsed_date"])
             sheets[name] = filtered
         else:
             sheets[name] = df
-else:
-    sheets = sheets_raw
 
 # Show which customer is selected
 st.markdown(f"""
