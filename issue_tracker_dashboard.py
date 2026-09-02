@@ -237,17 +237,6 @@ st.markdown("""
         box-shadow: none !important;
         color: #60a5fa !important;
     }
-    /* Sparkline: no own border/bg, just the SVG under the button */
-    .kpi-spark {
-        padding: 0 6px 4px;
-        text-align: center;
-    }
-    .kpi-spark svg {
-        margin: 0 auto !important;
-        display: block;
-        max-width: 100% !important;
-    }
-    
     /* Disable search/typing in selectbox */
     [data-baseweb="select"] input {
         pointer-events: none !important;
@@ -682,28 +671,6 @@ if st.session_state.active_view == "home":
         s = pd.Series(all_dates)
         monthly = s.dt.to_period("M").value_counts().sort_index()
         return monthly.tail(12).tolist() or [0] * 12
-    
-    def make_sparkline_svg(values, color="#60a5fa", width=120, height=35):
-        if not values or max(values) == 0:
-            return ""
-        max_val = max(values)
-        points = []
-        for i, v in enumerate(values):
-            x = (i / max(len(values) - 1, 1)) * width
-            y = height - (v / max_val) * (height - 4) - 2
-            points.append(f"{x:.1f},{y:.1f}")
-        polyline = " ".join(points)
-        # Fill area
-        fill_points = f"0,{height} " + polyline + f" {width},{height}"
-        gid = f"sparkGrad_{color.lstrip('#')}"
-        return f'''<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" preserveAspectRatio="xMidYMid meet" style="display:block; margin:6px auto 0;">
-            <defs><linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="{color}" stop-opacity="0.3"/>
-                <stop offset="100%" stop-color="{color}" stop-opacity="0.02"/>
-            </linearGradient></defs>
-            <polygon points="{fill_points}" fill="url(#{gid})"/>
-            <polyline points="{polyline}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>'''
     
     spark_data = get_monthly_counts(sheets_raw)
 
