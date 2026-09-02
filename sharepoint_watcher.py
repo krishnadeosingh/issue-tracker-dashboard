@@ -52,6 +52,45 @@ def log(message):
     print(f"[{timestamp}] {message}")
 
 
+# === GIT AUTO-PUSH ===
+# When True, changed Excel files are committed and pushed to GitHub so the
+# deployed Streamlit Cloud app auto-updates. Set AUTO_PUSH=0 in the environment
+# to disable (files will still be copied locally, just not pushed).
+AUTO_PUSH = os.environ.get("AUTO_PUSH", "1") not in ("0", "false", "False", "")
+GIT_BRANCH = os.environ.get("GIT_BRANCH", "main")
+
+
+def git_push_changes(changed_files):
+    """Commit and push the changed data files to GitHub (best-effort).
+
+    Only the given data files are staged, so unrelated working-tree changes are
+    left untouched. Any git failure is logged but never crashes the watcher.
+    """
+    if not AUTO_PUSH:
+        log("   ⏭️  AUTO_PUSH disabled — skipping git push.")
+        return
+    try:
+        # Stage only the data files that changed
+        subprocess.run(["git", "add", "--"] + changed_files,
+                       cwd=DASHBOARD_DIR, check=True)
+        # Nothing staged? (e.g. identical content) -> skip
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"],
+                                cwd=DASHBOARD_DIR)
+        if staged.returncode == 0:
+            log("   ⏭️  No staged changes to push.")
+            return
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        msg = f"data: auto-sync issue tracker files from SharePoint ({stamp})"
+        subprocess.run(["git", "commit", "-m", msg], cwd=DASHBOARD_DIR, check=True)
+        subprocess.run(["git", "push", "origin", GIT_BRANCH],
+                       cwd=DASHBOARD_DIR, check=True)
+        log(f"   🚀 Pushed data update to origin/{GIT_BRANCH} — live app will redeploy.")
+    except subprocess.CalledProcessError as e:
+        log(f"   ❌ Git push failed (data copied locally, not deployed): {e}")
+    except Exception as e:
+        log(f"   ❌ Unexpected git error: {e}")
+
+
 def copy_file(src_name, dst_name):
     """Copy a file from sync folder to dashboard folder if it changed."""
     src = os.path.join(SYNC_FOLDER, src_name)
@@ -78,19 +117,23 @@ def sync_all():
     """Copy all watched files from sync folder to dashboard folder."""
     log("🔄 Syncing files from SharePoint/OneDrive...")
     updated = 0
+    changed_files = []
     for src_name, dst_name in FILES_TO_SYNC.items():
         try:
             if copy_file(src_name, dst_name):
                 updated += 1
+                changed_files.append(dst_name)
         except Exception as e:
             log(f"   ❌ Error copying {src_name}: {e}")
 
     if updated:
         log(f"📥 {updated} file(s) updated.")
-        # Touch dashboard script to invalidate Streamlit cache
+        # Touch dashboard script to invalidate Streamlit cache (local run)
         if os.path.exists(DASHBOARD_SCRIPT):
             os.utime(DASHBOARD_SCRIPT, None)
             log("🔄 Dashboard cache invalidated.")
+        # Push changed data to GitHub so the deployed app auto-updates
+        git_push_changes(changed_files)
     else:
         log("✅ All files up to date.")
     return updated
@@ -155,6 +198,7 @@ def main():
     print(f"  Source:  {SYNC_FOLDER}")
     print(f"  Dest:    {DASHBOARD_DIR}")
     print(f"  Files:   {', '.join(FILES_TO_SYNC.keys())}")
+    print(f"  AutoPush: {'ON -> origin/' + GIT_BRANCH if AUTO_PUSH else 'OFF (local copy only)'}")
     print("=" * 60)
 
     # Initial sync
